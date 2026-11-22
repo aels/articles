@@ -151,7 +151,6 @@ What we actually need to know:
 
 - If the page's domain is in the CSD allowlist (a separate Safe Browsing DB, not the main blacklist) - classification won't start. Therefore a fresh, previously unknown domain won't be in the allowlist and classification will run
 - A cached positive result is served from cache without re-running. If a user revisits the same page - Chrome may show a warning without launching the classifier
-- Rate limit: Chrome limits the number of phishing reports per period. After exceeding the limit - classification for new URLs doesn't start until reset
 
 Great. URL gates covered.
 
