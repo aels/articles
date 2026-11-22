@@ -666,21 +666,7 @@ C:\Users\<username>\AppData\Local\Google\Chrome\User Data\Safe Browsing\
 
 Chrome обрабатывает `<input type="password">` и поля кредитных карт (`autocomplete="cc-number"`) особым образом: это ESB-триггеры `UNFAMILIAR_LOGIN_PAGE` и `CREDIT_CARD_FORM`. И эти триггеры **обходят проверку forward/back и POST (см. ниже)**.
 
-Мы разобрали это по коду. Когда `kSkipImageClassificationScoringForNonPageLoadTriggers` включен (а он включен по-умолчанию), ESB-триггеры не проходят через renderer classifier. Вместо этого они вызывают `ReportSkippedClassification()` с `CLASSIFICATION_SKIPPED`, который попадает в `PhishingDetectionDone()` и **проходит дальше** к image embedding, intelligent scan и серверному запросу:
-
-```cpp
-// https://chromium.googlesource.com/chromium/src/+/HEAD/components/safe_browsing/core/browser/client_side_detection/client_side_detection_host_base.cc, строки 725-728
-// Send a verdict if the result is SUCCESS, or if it is CLASSIFICATION_SKIPPED
-// to indicate that phishing detection was skipped but a verdict should still
-// be sent.
-if (result != PhishingDetectorResult::CLASSIFICATION_SUCCESS &&
-    result != PhishingDetectorResult::CLASSIFICATION_SKIPPED) {
-  // только эти два результата пропускаются к MaybeSendClientPhishingRequest()
-  return;
-}
-```
-
-Это значит: даже если вы обошли основной CSD через POST-форму, forward/back, blob: или Content-Type - одно поле `type="password"` на странице запустит ESB-триггер `UNFAMILIAR_LOGIN_PAGE`, который пройдет мимо всех наших байпасов и отправит URL + inner text + screenshot на сервер Google. То же самое с полями кредитных карт.
+Даже если вы обошли основной CSD через POST-форму, forward/back, blob: или Content-Type - одно поле `type="password"` на странице запустит ESB-триггер `UNFAMILIAR_LOGIN_PAGE`, который пройдет мимо всех наших байпасов и отправит URL + inner text + screenshot на сервер Google. То же самое с полями кредитных карт.
 
 По-этому замена input type - must-have. Без нее любой трюк с обходом CSD может быть обесценен одним ESB-юзером.
 
