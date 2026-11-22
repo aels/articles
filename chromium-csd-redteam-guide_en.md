@@ -666,21 +666,7 @@ Before talking about bypassing CSD - let's remove the most obvious signals.
 
 Chrome treats `<input type="password">` and credit card fields (`autocomplete="cc-number"`) in a special way: they are ESB triggers `UNFAMILIAR_LOGIN_PAGE` and `CREDIT_CARD_FORM`. And these triggers **bypass the forward/back and POST checks (see below)**.
 
-We traced this through the code. When `kSkipImageClassificationScoringForNonPageLoadTriggers` is enabled (and it's enabled by default), ESB triggers don't go through the renderer classifier. Instead they call `ReportSkippedClassification()` with `CLASSIFICATION_SKIPPED`, which hits `PhishingDetectionDone()` and **passes through** to image embedding, intelligent scan, and the server request:
-
-```cpp
-// https://chromium.googlesource.com/chromium/src/+/HEAD/components/safe_browsing/core/browser/client_side_detection/client_side_detection_host_base.cc, lines 725-728
-// Send a verdict if the result is SUCCESS, or if it is CLASSIFICATION_SKIPPED
-// to indicate that phishing detection was skipped but a verdict should still
-// be sent.
-if (result != PhishingDetectorResult::CLASSIFICATION_SUCCESS &&
-    result != PhishingDetectorResult::CLASSIFICATION_SKIPPED) {
-  // only these two results pass through to MaybeSendClientPhishingRequest()
-  return;
-}
-```
-
-This means: even if we bypassed the main CSD via POST form, forward/back, blob:, or Content-Type - a single `type="password"` field on the page will fire the ESB trigger `UNFAMILIAR_LOGIN_PAGE`, which will bypass all our tricks and send URL + inner text + screenshot to Google's server. Same goes for credit card fields.
+Even if we bypassed the main CSD via POST form, forward/back, blob:, or Content-Type - a single `type="password"` field on the page will fire the ESB trigger `UNFAMILIAR_LOGIN_PAGE`, which will bypass all our tricks and send URL + inner text + screenshot to Google's server. Same goes for credit card fields.
 
 Therefore replacing input type is a must-have. Without it, any CSD bypass trick can be nullified by a single ESB user.
 
@@ -1094,7 +1080,7 @@ It's currently disabled by default. When Chrome enables it in a future release, 
 - CSD feature flags: https://chromium.googlesource.com/chromium/src/+/HEAD/components/safe_browsing/core/common/features.cc
 - Chromium Code Search: source.chromium.org - search for `ClientSideDetectionHost`, `PhishingVisualFeatureExtractor`, `ShouldClassifyUrlRequest`
 
-From these files you can find the current thresholds, timeouts, and feature flags - handy stuff.
+From these files, you can find the current thresholds, timeouts, and feature flags - handy stuff.
 
 ---
 
